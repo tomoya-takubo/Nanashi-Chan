@@ -66,13 +66,16 @@
     <Compile Include="Assets\Scripts\00_Common\FadeImage.cs" />
     <Compile Include="Assets\Scripts\00_Common\GManager.cs" />
     <Compile Include="Assets\Scripts\01_Title\Title.cs" />
-    <Compile Include="Assets\Scripts\02_Stage1\ColliderCheck.cs" />
     <Compile Include="Assets\Scripts\02_Stage1\DeadPoint.cs" />
     <Compile Include="Assets\Scripts\02_Stage1\Enemy_Zako1.cs" />
     <Compile Include="Assets\Scripts\02_Stage1\EnemyCollisionCheck.cs" />
+    <Compile Include="Assets\Scripts\02_Stage1\FallDownFloor.cs" />
+    <Compile Include="Assets\Scripts\02_Stage1\GroundCheck.cs" />
     <Compile Include="Assets\Scripts\02_Stage1\Heart.cs" />
+    <Compile Include="Assets\Scripts\02_Stage1\MoveObject.cs" />
     <Compile Include="Assets\Scripts\02_Stage1\ObjectCollision.cs" />
     <Compile Include="Assets\Scripts\02_Stage1\Player.cs" />
+    <Compile Include="Assets\Scripts\02_Stage1\PlayerTriggerOn.cs" />
     <Compile Include="Assets\Scripts\02_Stage1\Score.cs" />
     <Compile Include="Assets\Scripts\02_Stage1\ScoreItem.cs" />
     <Compile Include="Assets\Scripts\02_Stage1\StageCtrl.cs" />

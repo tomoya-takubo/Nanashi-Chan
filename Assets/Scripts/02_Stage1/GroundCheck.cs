@@ -2,9 +2,10 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class ColliderCheck : MonoBehaviour
+public class GroundCheck : MonoBehaviour
 {
     private string groundTag = "Ground";
+    private string moveFloorTag = "MoveFloor";
     private bool isGround = false;
     private bool isGroundEnter, isGroundStay, isGroundExit;
 
@@ -30,7 +31,7 @@ public class ColliderCheck : MonoBehaviour
 
     private void OnTriggerEnter2D(Collider2D collision)
     {
-        if(collision.tag == groundTag)
+        if(collision.tag == groundTag || collision.tag == moveFloorTag)
         {
             //Debug.Log("何かが判定に入りました");
             isGroundEnter = true;
@@ -39,7 +40,7 @@ public class ColliderCheck : MonoBehaviour
 
     private void OnTriggerStay2D(Collider2D collision)
     {
-        if (collision.tag == groundTag)
+        if (collision.tag == groundTag || collision.tag == moveFloorTag)
         {
             //Debug.Log("何かが判定に入り続けています");
             isGroundStay = true;
@@ -49,7 +50,7 @@ public class ColliderCheck : MonoBehaviour
 
     private void OnTriggerExit2D(Collider2D collision)
     {
-        if (collision.tag == groundTag)
+        if (collision.tag == groundTag || collision.tag == moveFloorTag)
         {
             //Debug.Log("何かが判定をでました");
             isGroundExit = true;

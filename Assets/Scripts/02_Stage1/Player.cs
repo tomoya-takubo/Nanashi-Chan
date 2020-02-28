@@ -16,9 +16,9 @@ public class Player : MonoBehaviour
     [Header("ジャンプする長さ")] 
     public float jumpLimitTime;         //ジャンプ制限時間
     [Header("接地判定")] 
-    public ColliderCheck ground;        //接地判定
+    public GroundCheck ground;        //接地判定
     [Header("天井判定")] 
-    public ColliderCheck head;          //頭ぶつけた判定
+    public GroundCheck head;          //頭ぶつけた判定
     [Header("ダッシュの速さ表現")] 
     public AnimationCurve dashCurve;    //ダッシュ重み関数
     [Header("ジャンプの速さ表現")]
@@ -26,9 +26,7 @@ public class Player : MonoBehaviour
     [Header("踏みつけ判定の高さの割合")]
     public float stepOnRate;            //踏みつけ位置あそび
 
-    public Animator anim   = null;      //Animator型の変数を用意
-    public bool isDown = false;
-
+    
     [Header("ジャンプする時に鳴らすSE")]
     public AudioClip jumpSE;
     [Header("やられた時に鳴らすSE")]
@@ -39,23 +37,25 @@ public class Player : MonoBehaviour
     #endregion
 
     #region//プライベート変数
+    private Animator anim = null;      //Animator型の変数を用意
     private Rigidbody2D rb  = null;         //rigidbody2dインスタンス取得用の変数を定義
+    private CapsuleCollider2D capcol = null;
     private bool isGround = false;
     private bool isJump = false;
+    private bool isRun = false;             //ダッシュ中判別
+    private bool isDown = false;
+    private bool isOtherJump = false;
     private float jumpPos = 0.0f;
+    private float otherJumpHeight = 0.0f;
     //private float jumpTime = 0.0f;        //ジャンプ時間格納
     private float dashTime, jumpTime;       //経過時間（ダッシュ・ジャンプ）
     private float beforeKey;                //ダッシュ反転判別用
-    private bool isRun = false;             //ダッシュ中判別
     private string enemyTag = "Enemy";      //敵タグ判別用
-    private CapsuleCollider2D capcol = null;
-    private bool isOtherJump = false;
-    private float otherJumpHeight = 0.0f;
-
+    private string moveFloorTag = "MoveFloor";
     private bool isContinue = false;
     private float continueTime, blinkTime;
     private SpriteRenderer sr = null;
-
+    private MoveObject moveObj;
     #endregion
 
 
@@ -67,7 +67,45 @@ public class Player : MonoBehaviour
         capcol = GetComponent<CapsuleCollider2D>();
 
         sr = GetComponent<SpriteRenderer>();
-    }   
+    }
+    private void Update()
+    {
+        if (isContinue)
+        {
+            if (blinkTime > 0.2f)
+            {
+                sr.enabled = true;
+                blinkTime = 0.0f;
+
+            }
+            else if (blinkTime > 0.1f)
+            {
+                sr.enabled = false;
+
+            }
+            else
+            {
+                sr.enabled = true;
+
+            }
+
+            //1秒経ったら点滅終わり
+            if (continueTime > 1.0f)
+            {
+                isContinue = false;
+                blinkTime = 0f;
+                continueTime = 0f;
+                sr.enabled = true;
+
+            }
+            else
+            {
+                blinkTime += Time.deltaTime;
+                continueTime += Time.deltaTime;
+
+            }
+        }
+    }
 
     //物理演算するごとにアップグレードされる
     void FixedUpdate()
@@ -86,7 +124,14 @@ public class Player : MonoBehaviour
 
             //anim.SetBool("jump", isJump);
             //anim.SetBool("ground", isGround);
-            rb.velocity = new Vector2(xSpeed, ySpeed);
+
+            //移動速度を設定
+            Vector2 addVelocity = Vector2.zero;
+            if(moveObj != null)
+            {
+                addVelocity = moveObj.GetVelocity();
+            }
+            rb.velocity = new Vector2(xSpeed, ySpeed) + addVelocity;
         }
         else
         {
@@ -220,54 +265,11 @@ public class Player : MonoBehaviour
     /// </summary>
     private void SetAnimation()
     {
-        anim.SetBool("jump",isJump);
+        anim.SetBool("jump",isJump || isOtherJump);
         anim.SetBool("ground", isGround);
         anim.SetBool("run", isRun);
     }
 
-    #region//敵接触
-    private void OnCollisionEnter2D(Collision2D col)
-    {
-        if(col.gameObject.tag == enemyTag)
-        {
-            float stepOnHeight = (capcol.size.y * (stepOnRate / 100f));
-            float judgePos = transform.position.y - (capcol.size.y / 2f) + stepOnHeight;
-
-            foreach (ContactPoint2D p in col.contacts)
-            {
-                if(p.point.y < judgePos)
-                {
-                    //もう一度跳ねる
-                    ObjectCollision o = col.gameObject.GetComponent<ObjectCollision>();
-                    if(o != null)
-                    {
-                        otherJumpHeight = o.boundHeight;
-                        o.playerStepOn = true;
-                        isOtherJump = true;
-                        isJump = false;
-                        jumpTime = 0.0f;
-                    }
-                    else
-                    {
-                        Debug.Log("ObjectCollisionがついてないよ！");
-                    }
-                }
-                else
-                {
-                    //ダウンする
-                    anim.Play("player_knockdown");
-                    isDown = true;
-                    GManager.instance.SubHeratNum();
-
-                    GManager.instance.PlayerSE(downSE);
-
-                    break;
-                }
-            }
-        }
-
-    }
-    #endregion
 
     /// <summary>
     /// ダウンアニメーションが終わっているかどうか
@@ -308,42 +310,58 @@ public class Player : MonoBehaviour
 
     }
 
-    private void Update()
+    #region//敵接触
+    private void OnCollisionEnter2D(Collision2D col)
     {
-        if (isContinue)
+        if (col.gameObject.tag == enemyTag)
         {
-            if (blinkTime > 0.2f)
+            float stepOnHeight = (capcol.size.y * (stepOnRate / 100f));
+            float judgePos = transform.position.y - (capcol.size.y / 2f) + stepOnHeight;
+
+            foreach (ContactPoint2D p in col.contacts)
             {
-                sr.enabled = true;
-                blinkTime = 0.0f;
+                if (p.point.y < judgePos)
+                {
+                    //もう一度跳ねる
+                    ObjectCollision o = col.gameObject.GetComponent<ObjectCollision>();
+                    if (o != null)
+                    {
+                        otherJumpHeight = o.boundHeight;
+                        o.playerStepOn = true;
+                        isOtherJump = true;
+                        isJump = false;
+                        jumpTime = 0.0f;
+                    }
+                    else
+                    {
+                        Debug.Log("ObjectCollisionがついてないよ！");
+                    }
+                }
+                else
+                {
+                    //ダウンする
+                    anim.Play("player_knockdown");
+                    isDown = true;
+                    GManager.instance.SubHeratNum();
 
-            }
-            else if (blinkTime > 0.1f)
-            {
-                sr.enabled = false;
+                    GManager.instance.PlayerSE(downSE);
 
-            }
-            else
-            {
-                sr.enabled = true;
-
-            }
-
-            //1秒経ったら点滅終わり
-            if (continueTime > 1.0f)
-            {
-                isContinue = false;
-                blinkTime = 0f;
-                continueTime = 0f;
-                sr.enabled = true;
-
-            }
-            else
-            {
-                blinkTime += Time.deltaTime;
-                continueTime += Time.deltaTime;
-
+                    break;
+                }
             }
         }
+
     }
+
+    private void OnCollisionExit2D(Collision2D col)
+    {
+        if(col.collider.tag == moveFloorTag)
+        {
+            //動く床から離れた
+            moveObj = null;
+        }
+    }
+    #endregion
+
+
 }

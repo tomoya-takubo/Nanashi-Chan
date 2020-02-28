@@ -46,8 +46,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   score: 0
   stageNum: 1
-  continueNum: 0
-  heartNum: 0
+  continueNum: 3
+  heartNum: 3
   isGameOver: 0
   defaultHeartNum: 3
 --- !u!82 &9175048777600724744
