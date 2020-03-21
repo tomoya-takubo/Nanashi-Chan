@@ -14,11 +14,18 @@ public class GroundCheck : MonoBehaviour
     {
         if (isGroundEnter || isGroundStay)
         {
+            Debug.Log("isGroundEnter:" + isGroundEnter);
+            Debug.Log("isGroundStay:" + isGroundStay);
+
             isGround = true;
         }
         else if (isGroundExit)
         {
             isGround = false;
+        }
+        else    //EnterもStayもExitも動作しない場合、
+        {
+            //特に変更なし（直前のisGroundを継続）
         }
 
         isGroundEnter = false;
@@ -33,7 +40,8 @@ public class GroundCheck : MonoBehaviour
     {
         if(collision.tag == groundTag || collision.tag == moveFloorTag)
         {
-            //Debug.Log("何かが判定に入りました");
+            //Debug.Log("collision.tag:" + collision.tag);
+
             isGroundEnter = true;
         }
     }

@@ -115,7 +115,7 @@ public class Player : MonoBehaviour
             //接地判定を得る
             isGround = ground.IsGround();
 
-            //各種座標軸の速度を求める
+            //X,Y軸方向の速度を算出する
             float xSpeed = GetXSpeed();
             float ySpeed = GetYSpeed();
 
@@ -125,7 +125,7 @@ public class Player : MonoBehaviour
             //anim.SetBool("jump", isJump);
             //anim.SetBool("ground", isGround);
 
-            //移動速度を設定
+            //（動く床に乗っていること前提）動く床の移動速度を加味（assVelocity）
             Vector2 addVelocity = Vector2.zero;
             if(moveObj != null)
             {
@@ -149,10 +149,12 @@ public class Player : MonoBehaviour
         float verticalKey = Input.GetAxis("Vertical");
         float ySpeed = -gravity;
 
-        if (isGround)
+        if (isGround)   //地面に接触している場合
         {
-            //Debug.Log("isGround");
-            if (verticalKey > 0 && jumpTime < jumpLimitTime)
+            Debug.Log("DEBUG_isGround");
+
+            if (verticalKey > 0                 //上向き方向のコマンドが入力されている
+                && jumpTime < jumpLimitTime)    //ジャンプ継続時間が継続許容時間内である
             {
                 ySpeed = jumpSpeed;
                 jumpPos = transform.position.y; //ジャンプ直前のy方向の位置を取得
@@ -166,11 +168,15 @@ public class Player : MonoBehaviour
                 isJump = false;
             }
         }
-        else if (isOtherJump)
+        else if (isOtherJump)   //敵を踏んだ際に発生するジャンプ
         {
+            //Debug.Log("DEBUG_isOtherJump");
+
             //Debug.Log("isOtherJump");
             //現在の高さがジャンプした位置から自分の決めた位置より下ならジャンプを継続する
-            if (jumpPos + otherJumpHeight > transform.position.y && jumpTime < jumpLimitTime && !head.IsGround())
+            if (transform.position.y < jumpPos + otherJumpHeight    //現在の位置（Y軸方向）がジャンプ可能範囲内
+                && jumpTime < jumpLimitTime                         //ジャンプ継続時間がジャンプ継続許容時間内
+                && !head.IsGround())                                //頭をぶつけていない
             {
                 ySpeed = jumpSpeed;
                 jumpTime += Time.deltaTime;
@@ -182,19 +188,25 @@ public class Player : MonoBehaviour
                 jumpTime = 0.0f;
             }
         }
-        else if (isJump)
+        else if (isJump)    //ジャンプ中
         {
-            //Debug.Log("isJump");
-            if (verticalKey > 0 && transform.position.y < jumpPos + jumpHeight && jumpTime <
-                jumpLimitTime && !head.IsGround())
+            Debug.Log("DEBUG_isJump");
+            
+            if (verticalKey > 0                                     //上方向の入力がある
+                && transform.position.y < jumpPos + jumpHeight      //ジャンプ可能範囲内
+                && jumpTime < jumpLimitTime                         //ジャンプコマンド継続許容時間内
+                && !head.IsGround())                                //頭がぶつかってない
             {
-                ySpeed = jumpSpeed;
-                jumpTime += Time.deltaTime;
+                ySpeed = jumpSpeed;             //プレイヤー速度（y軸方向）にjumpSpeedを採用
+                jumpTime += Time.deltaTime;     //ジャンプ継続時間を更新
             }
+            //上記の条件一つでも満たしていなかったら
             else
             {
-                isJump = false;
-                jumpTime = 0.0f;
+                Debug.Log("head.IsGround():" + head.IsGround());
+
+                isJump = false;     //ジャンプ中状態を解除
+                jumpTime = 0.0f;    //ジャンプ継続時間をリセット
             }
         }
 
@@ -202,6 +214,7 @@ public class Player : MonoBehaviour
         {
             ySpeed *= jumpCurve.Evaluate(jumpTime); //ジャンプ
         }
+
         return ySpeed;
     }
 
